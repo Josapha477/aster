@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plateforme Sociale</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    {% verbatim %}
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" @click="currentPage = 'home'">
+                            SocialApp
+                        </h1>
+                    </div>
+                    
+                    <!-- Desktop Menu -->
+                    <div class="hidden md:flex items-center space-x-4">
+                        <template v-if="isAuthenticated">
+                            <button @click="currentPage = 'home'" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                                Accueil
+                            </button>
+                            <button @click="currentPage = 'profil'" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                                Profil
+                            </button>
+                            <button @click="logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Déconnexion
+                            </button>
+                        </template>
+                        <template v-else>
+                            <button @click="currentPage = 'login'" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                                Connexion
+                            </button>
+                            <button @click="currentPage = 'register'" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Inscription
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Mobile menu button -->
+                    <div class="md:hidden flex items-center">
+                        <button @click="mobileMenuOpen = !mobileMenuOpen" class="text-gray-700 hover:text-indigo-600 focus:outline-none">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path v-if="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div v-if="mobileMenuOpen" class="md:hidden">
+                <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                    <template v-if="isAuthenticated">
+                        <button @click="currentPage = 'home'; mobileMenuOpen = false" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50">
+                            Accueil
+                        </button>
+                        <button @click="currentPage = 'profil'; mobileMenuOpen = false" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50">
+                            Profil
+                        </button>
+                        <button @click="logout" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-gray-50">
+                            Déconnexion
+                        </button>
+                    </template>
+                    <template v-else>
+                        <button @click="currentPage = 'login'; mobileMenuOpen = false" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50">
+                            Connexion
+                        </button>
+                        <button @click="currentPage = 'register'; mobileMenuOpen = false" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50">
+                            Inscription
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Page de connexion -->
+            <div v-if="currentPage === 'login'" class="max-w-md mx-auto">
+                <div class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Connexion</h2>
+                    <form @submit.prevent="login">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Nom d'utilisateur
+                            </label>
+                            <input v-model="loginForm.username" type="text" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Mot de passe
+                            </label>
+                            <input v-model="loginForm.password" type="password" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div v-if="error" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                            {{ error }}
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                            Se connecter
+                        </button>
+                    </form>
+                    <p class="mt-4 text-center text-sm text-gray-600">
+                        Pas encore de compte ? 
+                        <a href="#" @click.prevent="currentPage = 'register'" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                            S'inscrire
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Page d'inscription -->
+            <div v-else-if="currentPage === 'register'" class="max-w-md mx-auto">
+                <div class="bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Inscription</h2>
+                    <form @submit.prevent="register">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Nom d'utilisateur
+                            </label>
+                            <input v-model="registerForm.username" type="text" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Mot de passe
+                            </label>
+                            <input v-model="registerForm.password" type="password" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div v-if="error" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                            {{ error }}
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                            S'inscrire
+                        </button>
+                    </form>
+                    <p class="mt-4 text-center text-sm text-gray-600">
+                        Déjà un compte ? 
+                        <a href="#" @click.prevent="currentPage = 'login'" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                            Se connecter
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Page d'accueil -->
+            <div v-else-if="currentPage === 'home'">
+                <h2 class="text-3xl font-bold text-gray-800 mb-8">Fil d'actualité</h2>
+                
+                <!-- Onglets -->
+                <div class="mb-6 border-b border-gray-200">
+                    <div class="flex space-x-8">
+                        <button @click="activeTab = 'media'" 
+                            :class="activeTab === 'media' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm">
+                            Posts Média
+                        </button>
+                        <button @click="activeTab = 'vente'"
+                            :class="activeTab === 'vente' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="py-4 px-1 border-b-2 font-medium text-sm">
+                            Posts Vente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Posts Média -->
+                <div v-if="activeTab === 'media'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-for="post in mediaPosts" :key="post.id" class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <img :src="post.imgM" alt="Post image" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <p class="text-sm font-semibold text-indigo-600 mb-2">@{{ post.username }}</p>
+                            <p class="text-gray-700 mb-2">{{ post.description }}</p>
+                            <p class="text-xs text-gray-500">{{ formatDate(post.created_at) }}</p>
+                        </div>
+                    </div>
+                    <div v-if="mediaPosts.length === 0" class="col-span-full text-center py-12 text-gray-500">
+                        Aucun post média pour le moment
+                    </div>
+                </div>
+
+                <!-- Posts Vente -->
+                <div v-if="activeTab === 'vente'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-for="post in ventePosts" :key="post.id" class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <img :src="post.imgV" alt="Product image" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <p class="text-sm font-semibold text-indigo-600 mb-2">@{{ post.username }}</p>
+                            <p class="text-gray-700 mb-2">{{ post.description }}</p>
+                            <div class="flex justify-between items-center mt-3">
+                                <p class="text-xl font-bold text-green-600">{{ post.prix }} FCFA</p>
+                                <a :href="'https://wa.me/' + post.whatsapp" target="_blank" 
+                                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm">
+                                    WhatsApp
+                                </a>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">{{ formatDate(post.created_at) }}</p>
+                        </div>
+                    </div>
+                    <div v-if="ventePosts.length === 0" class="col-span-full text-center py-12 text-gray-500">
+                        Aucun post de vente pour le moment
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page de profil -->
+            <div v-else-if="currentPage === 'profil' && isAuthenticated">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Colonne de gauche - Informations du profil -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Mon Profil</h2>
+                            <div class="text-center mb-4">
+                                <img v-if="profil.imgP" :src="profil.imgP" alt="Photo de profil" class="w-32 h-32 rounded-full mx-auto object-cover mb-4">
+                                <div v-else class="w-32 h-32 rounded-full mx-auto bg-gray-300 mb-4 flex items-center justify-center">
+                                    <span class="text-4xl text-gray-600">👤</span>
+                                </div>
+                                <h3 class="text-xl font-semibold">{{ profil.username }}</h3>
+                            </div>
+                            
+                            <form @submit.prevent="updateProfil" class="space-y-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Bio</label>
+                                    <input v-model="profil.bio" type="text" maxlength="50"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Photo de profil</label>
+                                    <input type="file" @change="handleProfilImageChange" accept="image/*"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                                    Mettre à jour le profil
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Colonne de droite - Créer des posts -->
+                    <div class="lg:col-span-2">
+                        <!-- Onglets de création -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <div class="flex space-x-4 mb-6 border-b border-gray-200">
+                                <button @click="createPostTab = 'media'"
+                                    :class="createPostTab === 'media' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'"
+                                    class="py-2 px-4 border-b-2 font-medium">
+                                    Créer Post Média
+                                </button>
+                                <button @click="createPostTab = 'vente'"
+                                    :class="createPostTab === 'vente' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'"
+                                    class="py-2 px-4 border-b-2 font-medium">
+                                    Créer Post Vente
+                                </button>
+                            </div>
+
+                            <!-- Formulaire Post Média -->
+                            <form v-if="createPostTab === 'media'" @submit.prevent="createMediaPost" class="space-y-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                                    <textarea v-model="mediaPostForm.description" required rows="3"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Image</label>
+                                    <input type="file" @change="handleMediaImageChange" accept="image/*" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md">
+                                    Publier
+                                </button>
+                            </form>
+
+                            <!-- Formulaire Post Vente -->
+                            <form v-if="createPostTab === 'vente'" @submit.prevent="createVentePost" class="space-y-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                                    <textarea v-model="ventePostForm.description" required rows="3"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Prix (FCFA)</label>
+                                    <input v-model.number="ventePostForm.prix" type="number" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">WhatsApp</label>
+                                    <input v-model="ventePostForm.whatsapp" type="text" required placeholder="Ex: 237690000000"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Image du produit</label>
+                                    <input type="file" @change="handleVenteImageChange" accept="image/*" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                                    Publier
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Mes posts -->
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Mes Publications</h3>
+                            
+                            <div class="mb-4 border-b border-gray-200">
+                                <div class="flex space-x-4">
+                                    <button @click="myPostsTab = 'media'"
+                                        :class="myPostsTab === 'media' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'"
+                                        class="py-2 px-1 border-b-2 font-medium text-sm">
+                                        Mes Posts Média
+                                    </button>
+                                    <button @click="myPostsTab = 'vente'"
+                                        :class="myPostsTab === 'vente' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'"
+                                        class="py-2 px-1 border-b-2 font-medium text-sm">
+                                        Mes Posts Vente
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div v-if="myPostsTab === 'media'" class="space-y-4">
+                                <div v-for="post in myMediaPosts" :key="post.id" class="border border-gray-200 rounded-lg p-4">
+                                    <img :src="post.imgM" alt="Post" class="w-full h-40 object-cover rounded mb-2">
+                                    <p class="text-gray-700">{{ post.description }}</p>
+                                    <p class="text-xs text-gray-500 mt-2">{{ formatDate(post.created_at) }}</p>
+                                </div>
+                                <div v-if="myMediaPosts.length === 0" class="text-center py-8 text-gray-500">
+                                    Vous n'avez pas encore de posts média
+                                </div>
+                            </div>
+
+                            <div v-if="myPostsTab === 'vente'" class="space-y-4">
+                                <div v-for="post in myVentePosts" :key="post.id" class="border border-gray-200 rounded-lg p-4">
+                                    <img :src="post.imgV" alt="Product" class="w-full h-40 object-cover rounded mb-2">
+                                    <p class="text-gray-700">{{ post.description }}</p>
+                                    <p class="text-xl font-bold text-green-600 mt-2">{{ post.prix }} FCFA</p>
+                                    <p class="text-sm text-gray-600">WhatsApp: {{ post.whatsapp }}</p>
+                                    <p class="text-xs text-gray-500 mt-2">{{ formatDate(post.created_at) }}</p>
+                                </div>
+                                <div v-if="myVentePosts.length === 0" class="text-center py-8 text-gray-500">
+                                    Vous n'avez pas encore de posts de vente
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    currentPage: 'home',
+                    mobileMenuOpen: false,
+                    isAuthenticated: false,
+                    activeTab: 'media',
+                    createPostTab: 'media',
+                    myPostsTab: 'media',
+                    error: '',
+                    loginForm: {
+                        username: '',
+                        password: ''
+                    },
+                    registerForm: {
+                        username: '',
+                        password: ''
+                    },
+                    profil: {
+                        username: '',
+                        bio: '',
+                        imgP: null
+                    },
+                    mediaPosts: [],
+                    ventePosts: [],
+                    myMediaPosts: [],
+                    myVentePosts: [],
+                    mediaPostForm: {
+                        description: '',
+                        imgM: null
+                    },
+                    ventePostForm: {
+                        description: '',
+                        prix: 0,
+                        whatsapp: '',
+                        imgV: null
+                    },
+                    profilImageFile: null
+                }
+            },
+            mounted() {
+                this.checkAuth();
+                this.fetchPosts();
+            },
+            methods: {
+                checkAuth() {
+                    const token = localStorage.getItem('access_token');
+                    if (token) {
+                        this.isAuthenticated = true;
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                        this.fetchProfil();
+                    } else {
+                        this.currentPage = 'login';
+                    }
+                },
+                async login() {
+                    this.error = '';
+                    try {
+                        const response = await axios.post('/api/login/', this.loginForm);
+                        localStorage.setItem('access_token', response.data.access);
+                        localStorage.setItem('refresh_token', response.data.refresh);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+                        this.isAuthenticated = true;
+                        this.currentPage = 'home';
+                        this.fetchProfil();
+                        this.fetchPosts();
+                    } catch (error) {
+                        this.error = 'Nom d\'utilisateur ou mot de passe incorrect';
+                    }
+                },
+                async register() {
+                    this.error = '';
+                    try {
+                        const response = await axios.post('/api/register/', this.registerForm);
+                        localStorage.setItem('access_token', response.data.access);
+                        localStorage.setItem('refresh_token', response.data.refresh);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+                        this.isAuthenticated = true;
+                        this.currentPage = 'home';
+                        this.fetchProfil();
+                        this.fetchPosts();
+                    } catch (error) {
+                        this.error = 'Erreur lors de l\'inscription. Le nom d\'utilisateur existe peut-être déjà.';
+                    }
+                },
+                async logout() {
+                    try {
+                        const refreshToken = localStorage.getItem('refresh_token');
+                        if (refreshToken) {
+                            await axios.post('/api/logout/', { refresh: refreshToken });
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la déconnexion:', error);
+                    } finally {
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refresh_token');
+                        delete axios.defaults.headers.common['Authorization'];
+                        this.isAuthenticated = false;
+                        this.currentPage = 'login';
+                        this.profil = { username: '', bio: '', imgP: null };
+                        this.myMediaPosts = [];
+                        this.myVentePosts = [];
+                    }
+                },
+                async fetchProfil() {
+                    try {
+                        const response = await axios.get('/api/profil/');
+                        this.profil = response.data;
+                    } catch (error) {
+                        console.error('Erreur lors du chargement du profil:', error);
+                    }
+                },
+                async fetchPosts() {
+                    try {
+                        const [mediaResponse, venteResponse] = await Promise.all([
+                            axios.get('/api/posts/media/'),
+                            axios.get('/api/posts/vente/')
+                        ]);
+                        this.mediaPosts = mediaResponse.data;
+                        this.ventePosts = venteResponse.data;
+                    } catch (error) {
+                        console.error('Erreur lors du chargement des posts:', error);
+                    }
+                },
+                async fetchMyPosts() {
+                    if (!this.isAuthenticated) return;
+                    try {
+                        const response = await axios.get('/api/my-posts/');
+                        this.myMediaPosts = response.data.media;
+                        this.myVentePosts = response.data.vente;
+                    } catch (error) {
+                        console.error('Erreur lors du chargement de mes posts:', error);
+                    }
+                },
+                async updateProfil() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('bio', this.profil.bio);
+                        if (this.profilImageFile) {
+                            formData.append('imgP', this.profilImageFile);
+                        }
+                        
+                        const response = await axios.patch('/api/profil/', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        this.profil = response.data;
+                        this.profilImageFile = null;
+                        alert('Profil mis à jour avec succès !');
+                    } catch (error) {
+                        console.error('Erreur lors de la mise à jour du profil:', error);
+                        alert('Erreur lors de la mise à jour du profil');
+                    }
+                },
+                async createMediaPost() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('description', this.mediaPostForm.description);
+                        formData.append('imgM', this.mediaPostForm.imgM);
+                        
+                        await axios.post('/api/posts/media/', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        
+                        this.mediaPostForm = { description: '', imgM: null };
+                        document.querySelector('input[type="file"]').value = '';
+                        this.fetchPosts();
+                        this.fetchMyPosts();
+                        alert('Post média créé avec succès !');
+                    } catch (error) {
+                        console.error('Erreur lors de la création du post média:', error);
+                        alert('Erreur lors de la création du post média');
+                    }
+                },
+                async createVentePost() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('description', this.ventePostForm.description);
+                        formData.append('prix', this.ventePostForm.prix);
+                        formData.append('whatsapp', this.ventePostForm.whatsapp);
+                        formData.append('imgV', this.ventePostForm.imgV);
+                        
+                        await axios.post('/api/posts/vente/', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                        
+                        this.ventePostForm = { description: '', prix: 0, whatsapp: '', imgV: null };
+                        document.querySelector('input[type="file"]').value = '';
+                        this.fetchPosts();
+                        this.fetchMyPosts();
+                        alert('Post vente créé avec succès !');
+                    } catch (error) {
+                        console.error('Erreur lors de la création du post vente:', error);
+                        alert('Erreur lors de la création du post vente');
+                    }
+                },
+                handleProfilImageChange(event) {
+                    this.profilImageFile = event.target.files[0];
+                },
+                handleMediaImageChange(event) {
+                    this.mediaPostForm.imgM = event.target.files[0];
+                },
+                handleVenteImageChange(event) {
+                    this.ventePostForm.imgV = event.target.files[0];
+                },
+                formatDate(dateString) {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('fr-FR', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                }
+            },
+            watch: {
+                currentPage(newPage) {
+                    if (newPage === 'profil' && this.isAuthenticated) {
+                        this.fetchMyPosts();
+                    }
+                    if (newPage === 'home') {
+                        this.fetchPosts();
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+    {% endverbatim %}
+</body>
+</html>
