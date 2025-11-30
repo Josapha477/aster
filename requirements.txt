@@ -1,5 +1,5 @@
 Django
-djangorestframework-simplejwtDjango
+djangorestframework-simplejwt
 gunicorn
 psycopg2-binary
 whitenoise
